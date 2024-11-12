@@ -1,67 +1,53 @@
 package initializer
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
+	"path/filepath"
 	"time"
 
 	"github.com/trace-panic/linux/config"
+	"github.com/trace-panic/linux/console"
 	"github.com/trace-panic/linux/filesystem"
-	"github.com/trace-panic/linux/writter"
 )
 
-var cfg = config.Config{}
+func CreateFileSytem(cfg config.Config) error {
+	directories := []string{
+		cfg.HomeDirectory + "/.config",
+	}
 
-func ReadInput() string {
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	return strings.TrimSpace(input)
-}
-
-func InitWorkflow() error {
-	fmt.Print("Enter computer hostname (e.g., dell): ")
-	hostname := ReadInput()
-
-	fmt.Print("Enter your username (e.g., patrick): ")
-	username := ReadInput()
-
-	if err := cfg.SetHostname(hostname); err != nil {
+	if err := filesystem.CreateDirs(directories); err != nil {
 		return err
 	}
-	if err := cfg.SetUsername(username); err != nil {
-		return err
-	}
-	cfg.SetOSVersion("0.0.1")
+
 	return nil
 }
 
 func Init() error {
+	cfg := config.GetConfig()
 	hmdir := filesystem.OSHomeDir()
-	if err := cfg.SetBaseDirectory(hmdir + "/linux"); err != nil {
-		return err
-	}
-	if err := cfg.SetHomeDirectory(cfg.BaseDirectory + "/home/" + cfg.Username); err != nil {
+
+	fmt.Print("Enter computer hostname (e.g., dell): ")
+	hostname := console.ReadInput()
+
+	fmt.Print("Enter your username (e.g., patrick): ")
+	username := console.ReadInput()
+
+	// Potential issues when username is empty
+	cfg.Hostname = hostname
+	cfg.Username = username
+	cfg.OSVersion = "0.0.1"
+	cfg.BaseDirectory = filepath.Join(hmdir, "linux")
+	cfg.HomeDirectory = filepath.Join(cfg.BaseDirectory, "home", cfg.Username)
+	cfg.CWD = cfg.HomeDirectory
+
+	if err := CreateFileSytem(*cfg); err != nil {
 		return err
 	}
 
-	new := !filesystem.DirExists(cfg.HomeDirectory + "/.config")
-	if new {
-		if err := InitWorkflow(); err != nil {
-			return err
-		}
-	} else {
-		// Load existing config
-		fmt.Println("Loading existing config")
-	}
-
-	if err := filesystem.Init(cfg); err != nil {
-		return err
-	}
+	cfg.SaveConfig()
 
 	fmt.Println("Setup complete. Continuing...")
 	time.Sleep(2 * time.Second)
-	writter.ClearConsole()
+	console.ClearConsole()
 	return nil
 }

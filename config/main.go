@@ -1,8 +1,11 @@
 package config
 
 import (
-	"errors"
+	"path/filepath"
 	"sync"
+
+	"github.com/trace-panic/linux/filesystem"
+	"github.com/trace-panic/linux/jsonfs"
 )
 
 type Config struct {
@@ -15,59 +18,49 @@ type Config struct {
 }
 
 var (
-	instance *Config
-	once     sync.Once
+	configInstance *Config
+	configLock     sync.Mutex
 )
 
 // GetConfig returns the singleton instance of Config.
 // It initializes the instance if it doesn't already exist.
 func GetConfig() *Config {
-	once.Do(func() {
-		instance = &Config{}
-	})
-	return instance
+	configLock.Lock()
+	defer configLock.Unlock()
+
+	if configInstance == nil {
+		configInstance = &Config{}
+	}
+
+	return configInstance
 }
 
-func (c *Config) SetUsername(username string) error {
-	if len(username) < 1 {
-		return errors.New("Missing username")
+func (c *Config) SaveConfig() error {
+	path := filepath.Join(c.HomeDirectory, ".config", "config.json")
+
+	data, err := jsonfs.MarshalJSON(c)
+	if err != nil {
+		return err
 	}
-	c.Username = username
+
+	if err := filesystem.SaveFileSecure(path, data); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (c *Config) SetHostname(hostname string) error {
-	if len(hostname) < 1 {
-		return errors.New("Missing hostname")
-	}
-	c.Hostname = hostname
-	return nil
-}
+func (c *Config) LoadConfig() error {
+	path := filepath.Join(c.HomeDirectory, ".config", "config.json")
 
-func (c *Config) SetCWD(cwd string) error {
-	if len(cwd) < 1 {
-		return errors.New("Missing CWD")
+	data, err := filesystem.ReadFile(path)
+	if err != nil {
+		return err
 	}
-	c.CWD = cwd
-	return nil
-}
 
-func (c *Config) SetBaseDirectory(baseDir string) error {
-	if len(baseDir) < 1 {
-		return errors.New("Missing directory")
+	if err := jsonfs.UnmarshalJSON(data, c); err != nil {
+		return err
 	}
-	c.BaseDirectory = baseDir
-	return nil
-}
 
-func (c *Config) SetHomeDirectory(homeDir string) error {
-	if len(homeDir) < 1 {
-		return errors.New("Missing directory")
-	}
-	c.HomeDirectory = homeDir
 	return nil
-}
-
-func (c *Config) SetOSVersion(osVersion string) {
-	c.OSVersion = osVersion
 }

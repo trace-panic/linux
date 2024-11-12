@@ -1,14 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
+	"github.com/trace-panic/linux/commands"
+	"github.com/trace-panic/linux/console"
 	"github.com/trace-panic/linux/initializer"
 )
 
 func BaseLoop() {
 	for {
+		fmt.Print("patrick@dell:~$ ")
+		input := console.ReadInput()
 
+		commands.RunCommand(input)
 	}
 }
 

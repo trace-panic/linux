@@ -1,6 +1,11 @@
-package writter
+package console
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
 
 type Color struct {
 	Reset   string
@@ -54,4 +59,10 @@ func WhiteText(message string) string {
 
 func ClearConsole() {
 	fmt.Print("\033[H\033[2J")
+}
+
+func ReadInput() string {
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSpace(input)
 }
