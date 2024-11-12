@@ -20,26 +20,37 @@ func ReadInput() string {
 	return strings.TrimSpace(input)
 }
 
-func InitWorkflow() {
+func InitWorkflow() error {
 	fmt.Print("Enter computer hostname (e.g., dell): ")
 	hostname := ReadInput()
 
 	fmt.Print("Enter your username (e.g., patrick): ")
 	username := ReadInput()
 
-	cfg.SetHostname(hostname)
-	cfg.SetUsername(username)
+	if err := cfg.SetHostname(hostname); err != nil {
+		return err
+	}
+	if err := cfg.SetUsername(username); err != nil {
+		return err
+	}
 	cfg.SetOSVersion("0.0.1")
+	return nil
 }
 
 func Init() error {
 	hmdir := filesystem.OSHomeDir()
-	cfg.SetBaseDirectory(hmdir + "/linux")
-	cfg.SetHomeDirectory(cfg.BaseDirectory + "/home/" + cfg.Username)
+	if err := cfg.SetBaseDirectory(hmdir + "/linux"); err != nil {
+		return err
+	}
+	if err := cfg.SetHomeDirectory(cfg.BaseDirectory + "/home/" + cfg.Username); err != nil {
+		return err
+	}
 
 	new := !filesystem.DirExists(cfg.HomeDirectory + "/.config")
 	if new {
-		InitWorkflow()
+		if err := InitWorkflow(); err != nil {
+			return err
+		}
 	} else {
 		// Load existing config
 		fmt.Println("Loading existing config")
