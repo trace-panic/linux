@@ -50,6 +50,13 @@ func CreateDirs(directories []string) error {
 	return nil
 }
 
+// FileExists checks if a file exists at the given path.
+// It returns true if the file exists, otherwise false.
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
+}
+
 // CreateFile creates a file at the specified path.
 // If the file creation fails, it returns an error.
 func CreateFile(path string) error {
